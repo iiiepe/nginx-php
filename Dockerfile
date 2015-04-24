@@ -23,6 +23,9 @@ RUN php5enmod mcrypt
 
 RUN /usr/bin/curl -sS https://getcomposer.org/installer | /usr/bin/php
 RUN /bin/mv composer.phar /usr/local/bin/composer
+
+RUN apt-get -y install msmtp msmtp-mta
+
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Configuration
@@ -45,6 +48,29 @@ RUN sed -i 's/post_max_size = .*/post_max_size = 500M/' /etc/php5/fpm/php.ini
 ADD ./startup.sh /opt/startup.sh
 RUN chmod +x /opt/startup.sh
 
+# We want it empty
+RUN touch /etc/msmtprc
+RUN chgrp mail /etc/msmtprc
+RUN chmod 660 /etc/msmtprc
+RUN touch /var/log/supervisor/msmtp.log
+RUN chgrp mail /var/log/supervisor/msmtp.log
+RUN chmod 660 /var/log/supervisor/msmtp.log
+RUN adduser www-data mail
+
+RUN rm /usr/sbin/sendmail
+RUN rm /usr/lib/sendmail
+
+RUN ln -s /usr/bin/msmtp /usr/sbin/sendmail
+RUN ln -s /usr/bin/msmtp /usr/bin/sendmail
+RUN ln -s /usr/bin/msmtp /usr/lib/sendmail
+
+ADD ./mail.sh /opt/mail.sh
+RUN chmod +x /opt/mail.sh
+
+# PHP
+ADD ./config/php/www.conf /etc/php5/fpm/pool.d/www.conf
+ADD ./config/php/php.ini /etc/php5/fpm/php.ini
+
 RUN mkdir /var/www
 
 ADD ./config/index.php /var/www/index.php
@@ -53,6 +79,12 @@ RUN usermod -u 1000 www-data
 RUN chown -R www-data:www-data /var/www
 
 EXPOSE 80
+
+ENV SMTP_HOST smtp.gmail.com
+ENV SMTP_PORT 587
+ENV SMTP_FROMNAME My Name
+ENV SMTP_USERNAME username@example.com
+ENV SMTP_PASSWORD secret
 
 WORKDIR /var/www
 
