@@ -36,9 +36,17 @@ server {
     client_max_body_size 500m;
 
     fastcgi_connect_timeout 3s;
-    fastcgi_pass unix:/var/run/php5-fpm.sock;
+    fastcgi_pass phpcgi;
 
-    fastcgi_index index.php;
+    #-*- mode: nginx; mode: flyspell-prog; ispell-local-dictionary: "american" -*-
+    ### Generic fastcgi configuration.
     include fastcgi_params;
+    fastcgi_buffers 256 4k;
+    fastcgi_intercept_errors on;
+    
+    ## allow 4 hrs - pass timeout responsibility to upstream.
+    fastcgi_read_timeout 14400;
+    fastcgi_index index.php;
+
   }
 }
